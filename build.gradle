@@ -1,0 +1,170 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.postgresql:postgresql:42.2.11'
+        classpath 'org.flywaydb:flyway-core:9.2.0'
+        classpath 'org.jooq:jooq-codegen:3.16.6'
+        classpath "org.openapitools:openapi-generator-gradle-plugin:6.1.0"
+    }
+}
+
+plugins {
+    id 'org.springframework.boot' version '2.7.3'
+    id 'java'
+    id 'org.openapi.generator' version '6.1.0'
+}
+
+apply from: 'scripts/jooqgenerator.gradle'
+apply plugin: 'java'
+apply plugin: 'org.openapi.generator'
+
+repositories {
+    mavenCentral()
+}
+
+group = 'com.becool'
+version = '0.1-SNAPSHOT'
+sourceCompatibility = '17'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+ext {
+    set('testcontainersVersion', "1.17.3")
+}
+
+dependencies {
+    /**********
+     Core dependencies
+     **********/
+
+    implementation 'org.springframework.boot:spring-boot-starter-jooq:2.7.3'
+    implementation 'org.springframework.boot:spring-boot-starter-security:2.7.3'
+    implementation 'org.springframework.boot:spring-boot-starter-web:2.7.3'
+    implementation 'org.springframework.boot:spring-boot-starter-parent:2.7.3'
+
+    /**********
+     Security
+     **********/
+
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.0'
+    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    implementation 'javax.xml.bind:jaxb-api:2.3.1'
+
+    /**********
+     Database
+     **********/
+
+    implementation 'org.flywaydb:flyway-core:9.2.0'
+    runtimeOnly 'org.postgresql:postgresql:42.5.0'
+    implementation "org.jooq:jooq:3.16.6"
+    implementation 'org.jooq:jooq-meta:3.16.6'
+    compileOnly 'org.jooq:jooq-codegen:3.16.6'
+
+    /**********
+     Tests
+     **********/
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:2.7.3'
+    testImplementation 'org.springframework.security:spring-security-test:5.7.3'
+    testImplementation 'org.testcontainers:junit-jupiter:1.17.3'
+    testImplementation 'org.testcontainers:postgresql:1.17.3'
+    implementation 'org.apache.httpcomponents:httpclient:4.5.14'
+
+    /**********
+     Swagger
+     **********/
+
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.6'
+    implementation 'io.springfox:springfox-boot-starter:3.0.0'
+    implementation 'io.springfox:springfox-swagger2:3.0.0'
+    implementation 'io.springfox:springfox-swagger-ui:3.0.0'
+
+    /**********
+     Others
+     **********/
+
+    implementation 'org.springframework.boot:spring-boot-starter-validation:2.7.3'
+    implementation 'javax.validation:validation-api:2.0.1.Final'
+    implementation 'org.openapitools:jackson-databind-nullable:0.2.3'
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    implementation 'com.fasterxml.uuid:java-uuid-generator:4.0.1'
+    implementation 'org.springframework.boot:spring-boot-starter-mail:2.7.5'
+    implementation 'com.googlecode.libphonenumber:libphonenumber:8.2.0'
+
+}
+
+test {
+    useJUnitPlatform()
+}
+
+/************************
+ Jooq code generation
+ *************************/
+
+jooq {
+    basePackageName = "com.becool.db"
+    includeMatches = ".*"
+    containerClass ="org.testcontainers.containers.PostgreSQLContainer"
+    imageName = "postgres:latest"
+    compatibleImage = "postgres"
+    generate {
+        fluentSetters = true
+        pojosEqualsAndHashCode = true
+        pojos = true
+        daos = true
+        immutablePojos = true
+        validationAnnotations = true
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs "src/main/java"
+            srcDirs "build/generated-jooq"
+            srcDirs "build/generated-openapi"
+        }
+    }
+}
+
+/************************
+ OpenApi generation
+ *************************/
+
+openApiGenerate {
+    generatorName = "spring"
+    inputSpec = "$rootDir/openApi/endpoints.yaml".toString()
+    outputDir = "$buildDir/generated-openapi".toString()
+    apiPackage = "com.becool.api"
+    invokerPackage = "com.fominsky.becool.invoker"
+    modelPackage = "com.fominsky.becool.model"
+    configOptions = [
+            swaggerAnnotations: "true",
+            sourceFolder: "src/main/java",
+            interfaceOnly: "true",
+            enumPropertyNaming: "UPPERCASE",
+            dateLibrary: "java8",
+            swaggerDocketConfig: "true",
+            java8: "true",
+            additionalModelTypeAnnotations: "@lombok.NoArgsConstructor"
+    ]
+}
+
+compileJava.dependsOn tasks.jooqDockerGenerate
+compileJava.dependsOn tasks.openApiGenerate

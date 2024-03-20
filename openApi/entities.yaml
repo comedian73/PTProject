@@ -1,0 +1,87 @@
+openapi: 3.0.3
+info:
+paths:
+components:
+  requestBodies:
+
+    ## Other code
+    ## / ----- /
+
+    ClientRegistrationRequest:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ClientRegistrationRequest"
+    ClientEmailFromPasswordRecovery:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ClientEmailFromPasswordRecovery"
+
+  schemas:
+
+  ## Other code
+  ## / ----- /
+
+    ClientRegistrationRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - name
+        - email
+        - password
+
+    ClientRegistrationResponse:
+      type: object
+      properties:
+        client:
+          $ref: '#/components/schemas/ClientResponse'
+      required:
+        - client
+
+    ClientResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+      required:
+        - id
+        - name
+        - email
+
+    ClientEmailFromPasswordRecovery:
+      type: object
+      properties:
+        email:
+          type: string
+      required:
+        - email
+
+    AuthResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+      required:
+        - id
+        - email
+
+  responses:
+    ErrorInfoList:
+      description: General Error Response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInfoList'
